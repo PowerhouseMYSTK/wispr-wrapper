@@ -23,6 +23,7 @@ const api = {
   },
   getNotificationsEnabled: (): Promise<boolean> => ipcRenderer.invoke('get-notifications-enabled'),
   setNotificationsEnabled: (value: boolean): Promise<void> => ipcRenderer.invoke('set-notifications-enabled', value),
+  quitAndInstall: (): Promise<void> => ipcRenderer.invoke('quit-and-install'),
 
   // ── main → toolbar ──────────────────────────────────────────────────────────
   onUrlChanged: (cb: (url: string) => void) => {

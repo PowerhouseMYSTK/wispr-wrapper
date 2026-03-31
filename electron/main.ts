@@ -10,6 +10,7 @@ import {
 } from 'electron';
 import path from 'path';
 import Store from 'electron-store';
+import { autoUpdater } from 'electron-updater';
 
 import {
   TARGET_URL,
@@ -46,6 +47,73 @@ let win:       BrowserWindow | null = null;
 let tray:      Tray          | null = null;
 let isQuitting = false;
 let zoomFactor = 1.0;
+
+// ─── Update toast ─────────────────────────────────────────────────────────────
+
+function injectUpdateToast() {
+  win?.webContents.executeJavaScript(`
+    (function () {
+      const ID = '__ew_update_toast__';
+      if (document.getElementById(ID)) return;
+
+      const toast = document.createElement('div');
+      toast.id = ID;
+      toast.style.cssText =
+        'position:fixed;bottom:64px;right:16px;z-index:2147483647;width:288px;' +
+        'background:rgba(7,11,22,0.96);border:1px solid rgba(255,255,255,0.08);' +
+        'border-radius:14px;overflow:hidden;' +
+        'backdrop-filter:blur(24px) saturate(180%);' +
+        'box-shadow:0 12px 48px rgba(0,0,0,0.72),0 0 0 1px rgba(99,102,241,0.15);' +
+        'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;' +
+        'transform:translateY(16px);opacity:0;' +
+        'transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1),opacity 0.2s ease;';
+
+      toast.innerHTML =
+        '<div style="padding:14px 15px 12px;border-bottom:1px solid rgba(255,255,255,0.06);' +
+        'display:flex;align-items:center;gap:10px;">' +
+          '<div style="width:32px;height:32px;border-radius:9px;flex-shrink:0;' +
+          'background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.25);' +
+          'display:flex;align-items:center;justify-content:center;font-size:15px;">🚀</div>' +
+          '<div>' +
+            '<div style="font-size:13px;font-weight:600;color:#f1f5f9;letter-spacing:-0.01em;">Update Ready</div>' +
+            '<div style="font-size:11px;color:rgba(100,116,139,0.9);margin-top:1px;">A new version has been downloaded</div>' +
+          '</div>' +
+        '</div>' +
+        '<div style="padding:10px 12px;display:flex;gap:7px;">' +
+          '<button id="__ew_upd_restart__" style="flex:1;padding:8px 0;border-radius:8px;border:none;cursor:pointer;' +
+          'background:linear-gradient(180deg,rgba(99,102,241,0.9),rgba(79,82,221,0.9));' +
+          'color:#fff;font-size:12px;font-weight:600;font-family:inherit;' +
+          'box-shadow:0 2px 12px rgba(99,102,241,0.35);transition:opacity 0.15s;">Restart Now</button>' +
+          '<button id="__ew_upd_later__" style="flex:1;padding:8px 0;border-radius:8px;cursor:pointer;' +
+          'background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);' +
+          'color:rgba(148,163,184,0.9);font-size:12px;font-weight:500;font-family:inherit;' +
+          'transition:background 0.15s;">Later</button>' +
+        '</div>';
+
+      document.documentElement.appendChild(toast);
+      requestAnimationFrame(function() {
+        toast.style.transform = 'translateY(0)';
+        toast.style.opacity = '1';
+      });
+
+      function dismiss() {
+        toast.style.transform = 'translateY(16px)';
+        toast.style.opacity = '0';
+        setTimeout(function() { toast.remove(); }, 300);
+      }
+
+      var restartBtn = toast.querySelector('#__ew_upd_restart__');
+      restartBtn.addEventListener('click', function() {
+        if (window.electronAPI && window.electronAPI.quitAndInstall) {
+          window.electronAPI.quitAndInstall();
+        }
+      });
+      restartBtn.addEventListener('mouseenter', function() { restartBtn.style.opacity = '0.85'; });
+      restartBtn.addEventListener('mouseleave', function() { restartBtn.style.opacity = '1'; });
+      toast.querySelector('#__ew_upd_later__').addEventListener('click', dismiss);
+    })();
+  `).catch(() => {});
+}
 
 // ─── Window ───────────────────────────────────────────────────────────────────
 
@@ -385,8 +453,22 @@ function createWindow() {
           '<span style="font-size:11px;font-weight:600;' +
           'background:linear-gradient(90deg,#a78bfa,#60a5fa,#34d399);' +
           '-webkit-background-clip:text;-webkit-text-fill-color:transparent;' +
-          'background-clip:text;">Powerhouse_</span>';
+          'background-clip:text;">Powerhouse_</span>' +
+          '<button id="__ew_discord__" title="Join Discord" style="' +
+          'background:none;border:none;cursor:pointer;padding:2px 4px;' +
+          'display:flex;align-items:center;opacity:0.6;transition:opacity 0.15s;margin-left:2px;">' +
+          '<svg width="14" height="14" viewBox="0 0 24 24" fill="rgba(148,163,184,1)">' +
+          '<path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057c.002.022.015.043.03.054a19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/>' +
+          '</svg></button>';
         panel.appendChild(ftr);
+
+        var discordBtn = ftr.querySelector('#__ew_discord__');
+        discordBtn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          window.open('https://discord.gg/5d7uhapU53');
+        });
+        discordBtn.addEventListener('mouseenter', function() { discordBtn.style.opacity = '1'; });
+        discordBtn.addEventListener('mouseleave', function() { discordBtn.style.opacity = '0.6'; });
 
         // ── Open / close logic ───────────────────────────────────────────────
         let isOpen = false;
@@ -561,6 +643,8 @@ function registerIpc() {
   ipcMain.handle('window-close',        () => win?.close());
   ipcMain.handle('window-is-maximized', () => win?.isMaximized() ?? false);
 
+  ipcMain.handle('quit-and-install', () => autoUpdater.quitAndInstall());
+
   ipcMain.handle('get-notifications-enabled', () =>
     windowStore.get('notificationsEnabled', true)
   );
@@ -569,6 +653,19 @@ function registerIpc() {
     windowStore.set('notificationsEnabled', value);
     buildTrayMenu();
   });
+}
+
+// ─── Auto-updater ─────────────────────────────────────────────────────────────
+
+function setupAutoUpdater() {
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true;
+
+  autoUpdater.on('update-downloaded', () => {
+    injectUpdateToast();
+  });
+
+  autoUpdater.checkForUpdatesAndNotify().catch(() => {/* no network or no releases yet */});
 }
 
 // ─── App lifecycle ────────────────────────────────────────────────────────────
@@ -585,6 +682,7 @@ app.whenReady().then(() => {
   registerIpc();
   createWindow();
   createTray();
+  if (!isDev) setupAutoUpdater();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();

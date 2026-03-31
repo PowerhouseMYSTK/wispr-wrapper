@@ -1,6 +1,6 @@
 {
   "name": "wispr-wrapper",
-  "version": "1.0.0",
+  "version": "1.0.3",
   "description": "Electron web wrapper with Next.js toolbar UI",
   "main": "electron/dist/main.js",
   "scripts": {
@@ -12,7 +12,8 @@
     "start": "electron ."
   },
   "dependencies": {
-    "electron-store": "^8.2.0"
+    "electron-store": "^8.2.0",
+    "electron-updater": "^6.8.3"
   },
   "devDependencies": {
     "@types/node": "^20.17.10",
@@ -49,7 +50,9 @@
       {
         "from": "assets",
         "to": "assets",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       }
     ],
     "asar": true,
@@ -57,10 +60,12 @@
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
-      "icon": "assets/icon.png",
+      "icon": "assets/mint.jpg",
       "requestedExecutionLevel": "asInvoker"
     },
     "nsis": {
@@ -71,13 +76,18 @@
     },
     "mac": {
       "target": "dmg",
-      "icon": "assets/icon.png",
+      "icon": "assets/mint.jpg",
       "category": "public.app-category.utilities"
     },
     "linux": {
       "target": "AppImage",
-      "icon": "assets/icon.png",
+      "icon": "assets/mint.jpg",
       "category": "Network"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "PowerhouseMYSTK",
+      "repo": "wispr-wrapper"
     }
   }
 }
