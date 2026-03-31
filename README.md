@@ -31,16 +31,6 @@ npm start        # run against the live site
 npm run dev      # run with Next.js dev server (port 3131)
 ```
 
-## Building & Publishing
-
-```bash
-$env:GH_TOKEN="your_token"
-npm run dist
-npx electron-builder --publish always
-```
-
----
-
 ## Made By
 
 **Powerhouse_** — [Join the Discord](https://discord.gg/5d7uhapU53)
