@@ -465,7 +465,7 @@ function createWindow() {
         var discordBtn = ftr.querySelector('#__ew_discord__');
         discordBtn.addEventListener('click', function(e) {
           e.stopPropagation();
-          window.open('https://discord.gg/5d7uhapU53');
+          window.open('https://discord.gg/4YYRWfuEqw');
         });
         discordBtn.addEventListener('mouseenter', function() { discordBtn.style.opacity = '1'; });
         discordBtn.addEventListener('mouseleave', function() { discordBtn.style.opacity = '0.6'; });
